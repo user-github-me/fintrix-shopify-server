@@ -19,16 +19,27 @@ const FINTIRX_BASE_URL = process.env.FINTIRX_BASE_URL;
 const paymentUrls = new Map();
 
 // Verify Shopify webhook
-function verifyShopifyWebhook(req) {
-  const hmacHeader = req.headers['x-shopify-hmac-sha256'];
-  const body = JSON.stringify(req.body);
-  const calculatedHmac = crypto
-    .createHmac('sha256', process.env.SHOPIFY_WEBHOOK_SECRET)
-    .update(body)
+const verifyShopifyWebhook = (req, res, next) => {
+  const shopifySecret = process.env.SHOPIFY_WEBHOOK_SECRET; // Your secret key from environment variables
+  
+  // Get the HMAC header from Shopify
+  const hmacHeader = req.get('X-Shopify-Hmac-Sha256');
+  
+  // Calculate the HMAC digest
+  const generatedHash = crypto
+    .createHmac('sha256', shopifySecret)
+    .update(req.body, 'utf8') // req.body is the raw body buffer
     .digest('base64');
-  return hmacHeader === calculatedHmac;
-}
 
+  // Compare the generated hash with the header
+  if (generatedHash === hmacHeader) {
+    console.log('✅ Webhook verified successfully!');
+    next(); // Move to the next function if valid
+  } else {
+    console.error('🚨 Webhook verification failed!');
+    res.status(401).send('Webhook verification failed.');
+  }
+};
 // Shopify order creation webhook
 app.post('/shopify-order-webhook', async (req, res) => {
   if (!verifyShopifyWebhook(req)) {
