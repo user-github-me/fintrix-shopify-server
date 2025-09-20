@@ -24,7 +24,7 @@ const verifyShopifyWebhook = (req, res, next) => {
   const hmacHeader = req.get('X-Shopify-Hmac-Sha256');
 
   const generatedHash = crypto
-    .createHmac('sha26', SHOPIFY_WEBHOOK_SECRET)
+    .createHmac('sha256', SHOPIFY_WEBHOOK_SECRET)
     .update(req.body) // req.body is the raw buffer now
     .digest('base64');
 
